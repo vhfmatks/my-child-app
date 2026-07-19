@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ageFromBirth, createAnswer, createReport, type Answers, type Child, type Report } from "../lib/analysis";
 import { questions } from "../lib/questions";
 
@@ -165,7 +165,29 @@ function QuestionScreen({ question, index, total, answers, onBack, onChoose, onT
 function Loading({ name }: { name: string }) { const [stage, setStage] = useState(0); useEffect(() => { const timer = window.setInterval(() => setStage((s) => Math.min(3, s + 1)), 400); return () => clearInterval(timer); }, []); const labels = ["사주·오행 흐름 정리", "강점·흥미 신호 읽기", "학업·미래 방향 연결", "성장 리포트 완성"]; return <section className="screen loading-screen"><div className="orbit"><i /><i /><b>✦</b></div><p className="eyebrow">DEEP 분석 중</p><h2>{name}의 미래를<br />그리는 중이에요</h2><div className="loading-steps">{labels.map((label, index) => <p key={label} className={index < stage ? "done" : index === stage ? "current" : ""}>{index < stage ? "●" : index === stage ? "◉" : "○"} {label}</p>)}</div></section>; }
 
 function ReportScreen({ child, report, messages, onSend, onShare, onHome, onRestart }: { child: Child; report: Report; messages: Message[]; onSend: (text: string) => void; onShare: () => void; onHome: () => void; onRestart: () => void }) {
+  const captureRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
+  // 결과 전체(스크롤 밖 포함)를 하나의 긴 PNG로 저장. html2canvas 는 클릭 시에만 동적 로드.
+  async function saveAsPng() {
+    const node = captureRef.current;
+    if (!node || saving) return;
+    setSaving(true);
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#fbf3ef", useCORS: true, logging: false });
+      const link = document.createElement("a");
+      link.download = `${(child.name || "우리아이").trim()}_성장리포트.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch {
+      window.alert("이미지 저장 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setSaving(false);
+    }
+  }
   return <section className="screen report-screen"><div className="report-top"><span>성장 리포트</span><div><button onClick={onShare}>공유</button><button onClick={onHome}>홈으로</button><button onClick={onRestart}>새로 하기</button></div></div><div className="report-content">
+    <div className="report-capture" ref={captureRef}>
     <div className="constellation"><span>{report.emoji}</span><p>우리 아이의 별자리</p><h1>{report.constellation}</h1><small>{report.tag}</small></div>
     <p className="disclaimer">사주와 성향 응답을 함께 본 참고용 결과예요. 미래를 확정하거나 평가하지 않아요.</p>
     <Card title="🔮 사주 분석 한눈에 보기">
@@ -194,6 +216,11 @@ function ReportScreen({ child, report, messages, onSend, onShare, onHome, onRest
     <Card title="✅ 지금 이렇게">{report.prescriptions.map((item, index) => <p className="prescription" key={item}><b>{index + 1}</b>{item}</p>)}<blockquote>“{report.encouragement}”</blockquote></Card>
     {showQa && <Chat messages={messages} onSend={onSend} />}
     <footer>✦ 이 서비스는 재미로 보는 성장 참고용 도구입니다. IQ·성적·건강·미래를 판단하지 않으며, 걱정이 지속되면 관련 전문가와 상담해 주세요.</footer>
+    </div>
+    <div className="report-actions">
+      <button className="act-share" onClick={onShare}>🔗 공유하기</button>
+      <button className="act-save" onClick={saveAsPng} disabled={saving} aria-busy={saving}>{saving ? "이미지 만드는 중…" : "🖼️ 이미지로 저장"}</button>
+    </div>
   </div></section>;
 }
 
