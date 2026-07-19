@@ -14,7 +14,7 @@ function isCurrentReport(value: unknown): value is Report {
   if (!value || typeof value !== "object") return false;
   const report = value as Partial<Report>;
   return Boolean(
-    report.pillars && report.elements && Array.isArray(report.constructs) && report.interest
+    report.pillars && report.elements && report.traditional && Array.isArray(report.constructs) && report.interest
     && Array.isArray(report.clusterScores) && report.confidence,
   );
 }
@@ -206,6 +206,7 @@ function ReportScreen({ child, report, messages, onSend, onShare, onHome, onRest
       <div className="element-guide"><span><b>목</b> 성장·계획</span><span><b>화</b> 표현·활력</span><span><b>토</b> 안정·돌봄</span><span><b>금</b> 기준·정리</span><span><b>수</b> 생각·유연함</span></div>
       <small>간이 계산 결과입니다. 절기·음력·진태양시를 정밀 보정하지 않았으며, 출생 시각을 모르면 시주와 흐름 해석의 참고 범위가 넓어집니다.</small>
     </Card>
+    <TraditionalSajuCard traditional={report.traditional} />
     <ProfileCard report={report} />
     <Card title="⭐ 빛나는 강점">{report.strengths.map((item) => <div className="insight" key={item.name}><b>{item.name}</b><p>{item.desc}</p></div>)}</Card>
     <Card title="🤍 함께 키워갈 지점">{report.watchPoints.map((item) => <div className="insight soft" key={item.name}><b>{item.name}</b><p>{item.desc}</p></div>)}</Card>
@@ -222,6 +223,23 @@ function ReportScreen({ child, report, messages, onSend, onShare, onHome, onRest
       <button className="act-save" onClick={saveAsPng} disabled={saving} aria-busy={saving}>{saving ? "이미지 만드는 중…" : "🖼️ 이미지로 저장"}</button>
     </div>
   </div></section>;
+}
+
+function TraditionalSajuCard({ traditional }: { traditional: Report["traditional"] }) {
+  return <Card title="☯ 명리 해석의 근거">
+    <p className="lead">사주 원국에서 실제로 어떤 관계를 읽는지 보여드려요. 각각은 정답이나 예측이 아니라, 전통 명리의 해석 재료입니다.</p>
+    <div className="traditional-summary"><div><span>월령(계절 기준)</span><b>{traditional.seasonalTerm} · {traditional.monthCommand}</b></div><div><span>올해의 간이 세운</span><b>{traditional.currentYear.pillar} · {traditional.currentYear.tenGod}</b></div></div>
+    <h3 className="saju-subtitle">사주 원국 · 지장간 · 십성</h3>
+    <div className="pillar-detail">{traditional.pillarDetails.map((pillar) => <div key={pillar.label}><span>{pillar.label}</span><b>{pillar.stem}{pillar.branch}</b><small>{pillar.stemTenGod}</small><em>지장간 {pillar.hiddenStems.length ? pillar.hiddenStems.join("·") : "—"}</em><i>{pillar.lifeStage}</i></div>)}</div>
+    <p className="detail-help">십성은 일간을 기준으로 다른 기운의 관계를 읽는 이름이고, 지장간은 지지 안에 함께 있다고 보는 숨은 기운이에요. 12운성은 기운의 흐름을 표현하는 전통 용어입니다.</p>
+    <h3 className="saju-subtitle">합·충 관계</h3>
+    {traditional.relations.length ? <div className="relation-list">{traditional.relations.map((relation) => <span key={`${relation.kind}-${relation.target}`} className={relation.kind === "충" ? "chung" : ""}><b>{relation.kind}</b> {relation.target} · {relation.description}</span>)}</div> : <p className="empty-relation">원국의 네 기둥에서 뚜렷한 천간합·육합·충이 계산되지 않았어요.</p>}
+    <h3 className="saju-subtitle">간이 대운 흐름</h3>
+    <p className="lead"><b>{traditional.daeun.direction}</b> · 약 {traditional.daeun.startAge}세부터 시작</p>
+    <div className="daeun-list">{traditional.daeun.periods.map((period) => <div key={period.ages}><b>{period.pillar}</b><span>{period.ages}</span></div>)}</div>
+    <p className="detail-help">{traditional.daeun.note}</p>
+    <div className="precision-notes">{traditional.precisionNotes.map((note) => <p key={note}>ⓘ {note}</p>)}</div>
+  </Card>;
 }
 
 function ProfileCard({ report }: { report: Report }) {

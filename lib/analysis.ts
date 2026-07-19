@@ -7,6 +7,7 @@
 //  - 응답 일관성(역채점 쌍) → 신뢰도. 모든 출력은 "현재 시점 참고자료".
 
 import { questions } from "./questions";
+import { calculateTraditionalSaju, type TraditionalSajuAnalysis } from "./traditional-saju";
 
 export type Child = { name: string; sex: "여아" | "남아" | ""; birth: string; calendar: "solar" | "lunar"; timeMode: "exact" | "unknown"; birthHour: number | null };
 export type Answers = Record<string, string | number | string[]>;
@@ -20,6 +21,7 @@ export type Report = {
   elements: Record<string, number>; dayStem: string; dayElement: string; strength: string; yongsin: string;
   pillars: { year: string; month: string; day: string; time: string };
   sajuExplanation: string;
+  traditional: TraditionalSajuAnalysis;
   academic: { style: string; subjects: { subject: string; why: string }[]; selfRegulation: string; coaching: string };
   emoSocial: string; timeline: { stage: string; note: string; favorable: boolean; guide: string; caution?: string }[];
   futures: { title: string; why: string; nurture: string; chips: string[] }[];
@@ -110,26 +112,10 @@ const CLUSTERS: Cluster[] = [
 export function createReport(child: Child, answers: Answers): Report {
   const name = child.name || "우리 아이";
 
-  // ── 만세력 계산 ──
-  const date = new Date(`${child.birth || "2017-01-01"}T00:00:00`);
-  const yearStemIndex = mod(date.getFullYear() - 4, 10); const yearBranchIndex = mod(date.getFullYear() - 4, 12);
-  const monthBranchIndex = mod(date.getMonth() + 1, 12);
-  const tigerStemStart = [2, 4, 6, 8, 0][yearStemIndex % 5];
-  const monthStemIndex = mod(tigerStemStart + monthBranchIndex - 2, 10);
-  const dayIndex = mod(10 + jdn(date) - 2415021, 60);
-  const dayStemIndex = dayIndex % 10; const dayBranchIndex = dayIndex % 12;
-  const hourBranchIndex = child.birthHour === null ? null : Math.floor(mod(child.birthHour + 1, 24) / 2);
-  const hourStemIndex = hourBranchIndex === null ? null : mod([0, 2, 4, 6, 8][dayStemIndex % 5] + hourBranchIndex, 10);
-  const pillarPairs: [number, number][] = [[yearStemIndex, yearBranchIndex], [monthStemIndex, monthBranchIndex], [dayStemIndex, dayBranchIndex]];
-  if (hourStemIndex !== null && hourBranchIndex !== null) pillarPairs.push([hourStemIndex, hourBranchIndex]);
-  const elementCounts = Object.fromEntries(elements.map((e) => [e, 0])) as Record<string, number>;
-  pillarPairs.forEach(([s, b]) => { elementCounts[stemElements[s]] += 1; elementCounts[branchElements[b]] += 1; });
-  const elementValues = elements.map((e) => elementCounts[e]);
-  const strongest = elements[elementValues.indexOf(Math.max(...elementValues))];
-  const balance = elements[elementValues.indexOf(Math.min(...elementValues))];
-  const stem = stems[dayStemIndex]; const dayElement = stemElements[dayStemIndex];
-  const generating: Record<string, string> = { 목: "수", 화: "목", 토: "화", 금: "토", 수: "금" };
-  const strength = (elementCounts[dayElement] + elementCounts[generating[dayElement]]) / pillarPairs.length / 2 >= 0.45 ? "기운이 비교적 든든한 편" : "주변의 도움으로 균형을 찾는 편";
+  // ── 만세력·명리 파생값 계산(절기 근사·지장간·십성·합충·대운) ──
+  const traditional = calculateTraditionalSaju(child);
+  const { elements: elementCounts, balanceElement: balance, dayStem: stem, dayElement, strength } = traditional;
+  const strongest = elements[Object.values(elementCounts).indexOf(Math.max(...Object.values(elementCounts)))];
 
   // ── 구성개념 점수화(역채점 정렬 → 평균) ──
   const bucket: Record<string, number[]> = {};
@@ -334,9 +320,10 @@ export function createReport(child: Child, answers: Answers): Report {
     constellation: persona.c, emoji: persona.e, tag: `${strongest}의 기운으로 자기만의 빛을 만드는 아이`,
     temperament: `${name}는 새로운 경험과 익숙한 리듬 사이에서 자신만의 속도를 찾아가는 중이에요. 아래는 성향 응답을 근거로 계산하고, 사주는 이야기의 문화적 배경(참고)으로 함께 본 결과예요. (응답 신뢰도: ${confidence})`,
     strengths, watchPoints,
-    elements: elementCounts, dayStem: stem, dayElement, strength, yongsin: `${balance} 기운을 채우는 경험`,
-    pillars: { year: `${stems[yearStemIndex]}${branches[yearBranchIndex]}`, month: `${stems[monthStemIndex]}${branches[monthBranchIndex]}`, day: `${stems[dayStemIndex]}${branches[dayBranchIndex]}`, time: hourStemIndex === null || hourBranchIndex === null ? "모름" : `${stems[hourStemIndex]}${branches[hourBranchIndex]}` },
+    elements: elementCounts, dayStem: stem, dayElement, strength, yongsin: traditional.yongsin,
+    pillars: traditional.pillars,
     sajuExplanation: `${name}의 중심 기운은 ${dayElement}(${stem})로 읽혀요. ${dayElement === "목" ? "새롭게 자라고 방향을 찾아가는 힘" : dayElement === "화" ? "표현하고 따뜻하게 에너지를 나누는 힘" : dayElement === "토" ? "안정적으로 쌓고 돌보는 힘" : dayElement === "금" ? "기준을 세우고 다듬는 힘" : "깊이 생각하고 유연하게 흐르는 힘"}에 가깝습니다. ${balance} 기운은 부족하다는 평가가 아니라, 다양한 경험으로 채워가면 좋은 성장의 힌트예요.`,
+    traditional,
     academic, emoSocial, timeline, futures,
     prescriptions: [
       "하루 10분, 아이가 고른 활동에 온전히 함께 있어 주세요.",
