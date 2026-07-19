@@ -21,7 +21,7 @@ export type Report = {
   pillars: { year: string; month: string; day: string; time: string };
   sajuExplanation: string;
   academic: { style: string; subjects: { subject: string; why: string }[]; selfRegulation: string; coaching: string };
-  emoSocial: string; timeline: { stage: string; note: string; favorable: boolean; guide: string }[];
+  emoSocial: string; timeline: { stage: string; note: string; favorable: boolean; guide: string; caution?: string }[];
   futures: { title: string; why: string; nurture: string; chips: string[] }[];
   prescriptions: string[]; encouragement: string;
   // ── 시각화·근거용(엔진 산출) ──
@@ -315,11 +315,13 @@ export function createReport(child: Child, answers: Answers): Report {
       stage: "초등 중·고학년", favorable: !hi("HA"),
       note: hi("HA") ? "새로운 흥미를 안전하게 넓혀보는 시기 — 예고와 응원이 힘이 돼요" : "흥미를 여러 활동으로 넓히며 강점을 확인하는 시기",
       guide: `${(efMean ?? 3) < 3.6 ? "시작·정리를 돕는 작은 루틴(타이머·체크리스트)을 함께 만들고, " : ""}관심을 하나로 좁히기보다 여러 활동을 직접 체험하게 해주세요.${topName ? ` 지금 보이는 '${topName}' 결의 체험을 곁들이면 흥미가 또렷해져요.` : ""}`,
+      ...(hi("HA") ? { caution: "새 학년·새 관계처럼 변화가 늘어 부담을 느끼기 쉬운 시기예요. 바뀌는 일은 미리 알려주고, 잘 안 된 날도 '그럴 수 있어'라고 먼저 안심시켜 주세요. 위축이 오래가면 재촉하지 말고 천천히 함께 살펴봐요." } : {}),
     },
     {
-      stage: "청소년기", favorable: true,
-      note: "스스로 선택하고 깊이를 만들어가는 시기",
+      stage: "청소년기", favorable: !lo("ER"),
+      note: lo("ER") ? "감정의 파도가 커지는 시기 — 마음을 먼저 다독여 주면 좋아요" : "스스로 선택하고 깊이를 만들어가는 시기",
       guide: "선택권을 넘겨주고 관심사를 깊이 파보게 하세요. 진로를 대신 정해주기보다, 실제 경험(체험·봉사·동아리)과 좋은 어른(멘토)을 만나게 해 '스스로 고르는 힘'을 키워요.",
+      ...(lo("ER") ? { caution: "기복이 커지는 시기라, 성취를 밀어붙이기 전에 감정을 먼저 다독여 주세요. 마음을 말로 풀 수 있게 기다려주고, 힘들어하는 신호가 오래가면 전문가와 상의해도 괜찮아요." } : {}),
     },
     {
       stage: "성인 초입", favorable: true,
