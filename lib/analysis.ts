@@ -21,7 +21,7 @@ export type Report = {
   pillars: { year: string; month: string; day: string; time: string };
   sajuExplanation: string;
   academic: { style: string; subjects: { subject: string; why: string }[]; selfRegulation: string; coaching: string };
-  emoSocial: string; timeline: { stage: string; note: string; favorable: boolean }[];
+  emoSocial: string; timeline: { stage: string; note: string; favorable: boolean; guide: string }[];
   futures: { title: string; why: string; nurture: string; chips: string[] }[];
   prescriptions: string[]; encouragement: string;
   // ── 시각화·근거용(엔진 산출) ──
@@ -298,11 +298,34 @@ export function createReport(child: Child, answers: Answers): Report {
   const confidence = answeredScales < totalScales * 0.6 ? "낮음 (문항이 많이 비어 참고 범위가 넓어요)"
     : avgDiff <= 1 ? "높음 (응답이 일관돼요)" : avgDiff <= 2 ? "보통" : "낮음 (응답이 다소 엇갈려 참고로만 봐주세요)";
 
+  // 나이대별 '이렇게 지도해요' — 진로발달 단계(흥미형성→탐색→연결)에 아이 성향을 반영
+  const topName = top[0]?.cluster.name;
+  const stageApproach = hi("HA")
+    ? "새로운 도전은 미리 예고하고 작게 쪼개 '해봤더니 괜찮네' 경험을 쌓아주세요."
+    : hi("NS") || lo("INHIBIT")
+      ? "에너지를 마음껏 쓸 활동을 주되, 시작 전 규칙을 한 번 더 함께 확인해요."
+      : "아이의 속도를 존중하며 '어떤 게 재미있었어?'를 자주 물어봐 주세요.";
   const timeline = [
-    { stage: "지금 (유아·초등 저학년)", note: "좋아하는 것을 마음껏 경험하며 자신감을 쌓는 시기", favorable: true },
-    { stage: "초등 중·고학년", note: hi("HA") ? "새로운 흥미를 안전하게 넓혀보는 시기 — 예고와 응원이 힘이 돼요" : "흥미를 여러 활동으로 넓히며 강점을 확인하는 시기", favorable: !hi("HA") },
-    { stage: "청소년기", note: "스스로 선택하고 깊이를 만들어가는 시기", favorable: true },
-    { stage: "성인 초입", note: "강점을 삶의 방향으로 연결해 보는 시기", favorable: true },
+    {
+      stage: "지금 (유아·초등 저학년)", favorable: true,
+      note: "좋아하는 것을 마음껏 경험하며 자신감을 쌓는 시기",
+      guide: `아직 직업이 아니라 '흥미의 씨앗'을 뿌리는 때예요. 잘하는 것보다 즐거워하는 순간을 함께 짚어주고, 여러 놀이를 폭넓게 경험하게 하세요. ${stageApproach}`,
+    },
+    {
+      stage: "초등 중·고학년", favorable: !hi("HA"),
+      note: hi("HA") ? "새로운 흥미를 안전하게 넓혀보는 시기 — 예고와 응원이 힘이 돼요" : "흥미를 여러 활동으로 넓히며 강점을 확인하는 시기",
+      guide: `${(efMean ?? 3) < 3.6 ? "시작·정리를 돕는 작은 루틴(타이머·체크리스트)을 함께 만들고, " : ""}관심을 하나로 좁히기보다 여러 활동을 직접 체험하게 해주세요.${topName ? ` 지금 보이는 '${topName}' 결의 체험을 곁들이면 흥미가 또렷해져요.` : ""}`,
+    },
+    {
+      stage: "청소년기", favorable: true,
+      note: "스스로 선택하고 깊이를 만들어가는 시기",
+      guide: "선택권을 넘겨주고 관심사를 깊이 파보게 하세요. 진로를 대신 정해주기보다, 실제 경험(체험·봉사·동아리)과 좋은 어른(멘토)을 만나게 해 '스스로 고르는 힘'을 키워요.",
+    },
+    {
+      stage: "성인 초입", favorable: true,
+      note: "강점을 삶의 방향으로 연결해 보는 시기",
+      guide: "진로는 한 번에 정해지지 않고 자라며 바뀌어요. 아이의 선택을 지지하고, 한 직업보다 '옮겨가며 배우는 힘(평생학습·적응력)'을 응원해 주세요.",
+    },
   ];
 
   return {

@@ -211,7 +211,7 @@ function ReportScreen({ child, report, messages, onSend, onShare, onHome, onRest
     <Card title="🤍 함께 키워갈 지점">{report.watchPoints.map((item) => <div className="insight soft" key={item.name}><b>{item.name}</b><p>{item.desc}</p></div>)}</Card>
     <Card title="📚 학업 성취"><p className="lead">{report.academic.style}</p>{report.academic.subjects.map((item) => <div className="subject" key={item.subject}><b>{item.subject}</b><span>{item.why}</span></div>)}<p><b>집중·자기조절</b><br />{report.academic.selfRegulation}</p><p><b>부모 코칭</b><br />{report.academic.coaching}</p></Card>
     <Card title="🧠 정서·사회성"><p>{report.emoSocial}</p></Card>
-    <Card title="🌌 나이대별 흐름"><div className="timeline">{report.timeline.map((item) => <div key={item.stage}><i className={item.favorable ? "favorable" : "watch"} /><b>{item.stage} <em>{item.favorable ? "순풍" : "살펴봄"}</em></b><p>{item.note}</p></div>)}</div></Card>
+    <Card title="🌌 나이대별 흐름"><div className="timeline">{report.timeline.map((item) => <div key={item.stage}><i className={item.favorable ? "favorable" : "watch"} /><b>{item.stage} <em>{item.favorable ? "순풍" : "살펴봄"}</em></b><p>{item.note}</p><p className="tl-guide"><b>이렇게 지도해요</b> {item.guide}</p></div>)}</div></Card>
     <Card title="🧭 어울리는 미래 방향">{report.futures.map((item) => <div className="future" key={item.title}><h3>{item.title}</h3><p>{item.why}</p><div className="tags">{item.chips.map((chip) => <span key={chip}>{chip}</span>)}</div><p className="nurture"><b>지금 키울 것</b> {item.nurture}</p></div>)}</Card>
     <Card title="✅ 지금 이렇게">{report.prescriptions.map((item, index) => <p className="prescription" key={item}><b>{index + 1}</b>{item}</p>)}<blockquote>“{report.encouragement}”</blockquote></Card>
     {showQa && <Chat messages={messages} onSend={onSend} />}
